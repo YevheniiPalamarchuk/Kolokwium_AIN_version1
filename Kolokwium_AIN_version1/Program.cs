@@ -12,7 +12,7 @@ namespace Kolokwium_AIN_version1
             public double[] Genes { get; set; }
             public double Fitness { get; set; }
         }
-        
+
         // List 
         public static List<Individual> InitializePopulation(int populationSize, int numVariables, double minValue, double maxValue)
         {
@@ -137,49 +137,62 @@ namespace Kolokwium_AIN_version1
         }
 
 
-        public static List<Individual> OnePointCrossover(List<Individual> parents, double crossoverRate)
+        public static List<Individual> UniformCrossover(List<Individual> parents, double crossoverRate)
         {
             List<Individual> offspring = new List<Individual>();
 
+            Random rand = new Random();
+
             for (int i = 0; i < parents.Count; i += 2)
             {
-                if (new Random().NextDouble() < crossoverRate)
+                if (rand.NextDouble() < crossoverRate)
                 {
-                    int crossoverPoint = new Random().Next(parents[i].Genes.Length);
+                    double[] child1Genes = new double[parents[i].Genes.Length];
+                    double[] child2Genes = new double[parents[i].Genes.Length];
 
-                    double[] child1Genes = parents[i].Genes.Take(crossoverPoint)
-                        .Concat(parents[i + 1].Genes.Skip(crossoverPoint))
-                        .ToArray();
-
-                    double[] child2Genes = parents[i + 1].Genes.Take(crossoverPoint)
-                        .Concat(parents[i].Genes.Skip(crossoverPoint))
-                        .ToArray();
+                    for (int j = 0; j < parents[i].Genes.Length && j < parents[i + 1].Genes.Length; j++)
+                    {
+                        // Perform crossover for valid indices
+                        if (rand.NextDouble() < 0.5)
+                        {
+                            child1Genes[j] = parents[i].Genes[j];
+                            child2Genes[j] = parents[i + 1].Genes[j];
+                        }
+                        else
+                        {
+                            child1Genes[j] = parents[i + 1].Genes[j];
+                            child2Genes[j] = parents[i].Genes[j];
+                        }
+                    }
 
                     offspring.Add(new Individual { Genes = child1Genes });
                     offspring.Add(new Individual { Genes = child2Genes });
                 }
                 else
                 {
-                    // If no crossover, offspring are identical to parents
-                    offspring.Add(new Individual { Genes = parents[i].Genes });
-                    offspring.Add(new Individual { Genes = parents[i + 1].Genes });
+                    // If no crossover, simply copy parents to offspring
+                    offspring.Add(new Individual { Genes = parents[i].Genes.ToArray() });
+                    offspring.Add(new Individual { Genes = parents[i + 1].Genes.ToArray() });
                 }
             }
 
             return offspring;
         }
+
+
+
         public static void Mutate(List<Individual> population, double mutationRate, double mutationRange)
         {
-            Random rand = new Random();
+            Random rnd = new Random();
 
             foreach (var individual in population)
             {
-                if (rand.NextDouble() < mutationRate)
+                if (rnd.NextDouble() < mutationRate)
                 {
                     for (int i = 0; i < individual.Genes.Length; i++)
                     {
                         // Add a small random value to the gene
-                        individual.Genes[i] += rand.NextDouble() * 2 * mutationRange - mutationRange;
+                        individual.Genes[i] += rnd.NextDouble() * 2 * mutationRange - mutationRange;
                     }
                 }
             }
@@ -206,7 +219,7 @@ namespace Kolokwium_AIN_version1
         static void Main(string[] args)
         {
 
-            int populationSize = 50;
+            int populationSize = 100;
             int numVariables = 3;
             double minValueGeneralizedRosenbrock = -30.0;
             double maxValueGeneralizedRosenbrock = 30.0;
@@ -232,12 +245,12 @@ namespace Kolokwium_AIN_version1
                 EvaluatePopulation(populationGeneralizedRosenbrock, CalculateFitnessGeneralizedRosenbrock); // or CalculateFitnessGeneralizedRosenbrock
 
                 // Select parents for the next generation
-                int numParents = populationSize / 2; 
+                int numParents = populationSize / 2;
                 List<Individual> selectedParents = RouletteWheelSelection(populationGeneralizedRosenbrock, numParents);
 
                 // Perform crossover on selected parents
                 double crossoverRate = 0.7;
-                List<Individual> offspring = OnePointCrossover(selectedParents, crossoverRate);
+                List<Individual> offspring = UniformCrossover(selectedParents, crossoverRate);
 
                 // Perform mutation on the offspring
                 double mutationRate = 0.1;
@@ -264,7 +277,7 @@ namespace Kolokwium_AIN_version1
 
                 // Perform crossover on selected parents
                 double crossoverRate = 0.7;
-                List<Individual> offspring = OnePointCrossover(selectedParents, crossoverRate);
+                List<Individual> offspring = UniformCrossover(selectedParents, crossoverRate);
 
                 // Perform mutation on the offspring
                 double mutationRate = 0.1;
@@ -291,7 +304,7 @@ namespace Kolokwium_AIN_version1
 
                 // Perform crossover on selected parents
                 double crossoverRate = 0.7;
-                List<Individual> offspring = OnePointCrossover(selectedParents, crossoverRate);
+                List<Individual> offspring = UniformCrossover(selectedParents, crossoverRate);
 
                 // Perform mutation on the offspring
                 double mutationRate = 0.1;
