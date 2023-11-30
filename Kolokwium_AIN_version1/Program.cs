@@ -6,11 +6,14 @@ namespace Kolokwium_AIN_version1
 {
     internal class Program
     {
+        // Individual
         public class Individual
         {
             public double[] Genes { get; set; }
             public double Fitness { get; set; }
         }
+        
+        // List 
         public static List<Individual> InitializePopulation(int populationSize, int numVariables, double minValue, double maxValue)
         {
             Random rand = new Random();
@@ -29,6 +32,8 @@ namespace Kolokwium_AIN_version1
 
             return population;
         }
+
+        // Evaluate population
         public static void EvaluatePopulation(List<Individual> population, Func<double[], double> fitnessFunction)
         {
             foreach (var individual in population)
@@ -36,7 +41,7 @@ namespace Kolokwium_AIN_version1
                 individual.Fitness = fitnessFunction(individual.Genes);
             }
         }
-
+        // GeneralizedRosenbrock
         static double GeneralizedRosenbrockFunction(double[] x, double a, double b)
         {
             int n = x.Length;
@@ -51,6 +56,8 @@ namespace Kolokwium_AIN_version1
 
             return sum;
         }
+
+        //CalculateFitnessGeneralizedRosenbrock
         public static double CalculateFitnessGeneralizedRosenbrock(double[] genes)
         {
             double a = 1.0;
@@ -58,12 +65,13 @@ namespace Kolokwium_AIN_version1
 
             double result = GeneralizedRosenbrockFunction(genes, a, b);
 
-            // Since you're minimizing, negate the result
+            // Since minimizing, negate the result
             double fitness = -result;
 
             return fitness;
         }
 
+        // Salomon
         public static double CalculateFitnessSalomon(double[] genes)
         {
             double sum = 0;
@@ -77,6 +85,26 @@ namespace Kolokwium_AIN_version1
 
             return 1 - Math.Cos(2 * Math.PI * sqrtSum) + 0.1 * sqrtSum;
         }
+
+        // Whitley
+        public static double CalculateFitnessWhitley(double[] genes)
+        {
+            int n = genes.Length;
+            double sum = 0;
+
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < n; j++)
+                {
+                    double term1 = 100 * Math.Pow(genes[i] * genes[i] - genes[j], 2);
+                    double term2 = Math.Pow(1 - genes[j], 2);
+                    sum += (term1 + term2) / 4000 - Math.Cos(term1 + term2) + 1;
+                }
+            }
+
+            return sum;
+        }
+
 
         public static List<Individual> RouletteWheelSelection(List<Individual> population, int numParents)
         {
@@ -180,20 +208,32 @@ namespace Kolokwium_AIN_version1
 
             int populationSize = 50;
             int numVariables = 3;
-            double minValue = -30.0; 
-            double maxValue = 30.0; 
+            double minValueGeneralizedRosenbrock = -30.0;
+            double maxValueGeneralizedRosenbrock = 30.0;
+
+            double minValueSalomon = -100.0;
+            double maxValueSalomon = 100.0;
+
+            double minValueWhitley = -10.24;
+            double maxValueWhitley = 10.24;
+
             int numGenerations = 100;
 
-            List<Individual> population = InitializePopulation(populationSize, numVariables, minValue, maxValue);
+            // Dimensions
+            int[] dimensions = { 10, 30, 50 };
+
+            //List<Individual> population = InitializePopulation(populationSize, numVariables, minValue, maxValue);
+            List<Individual> populationGeneralizedRosenbrock = InitializePopulation(populationSize, numVariables, minValueGeneralizedRosenbrock, maxValueGeneralizedRosenbrock);
+
 
             for (int generation = 0; generation < numGenerations; generation++)
             {
                 // Evaluate the fitness of each individual
-                EvaluatePopulation(population, CalculateFitnessSalomon); // or CalculateFitnessGeneralizedRosenbrock
+                EvaluatePopulation(populationGeneralizedRosenbrock, CalculateFitnessGeneralizedRosenbrock); // or CalculateFitnessGeneralizedRosenbrock
 
                 // Select parents for the next generation
                 int numParents = populationSize / 2; 
-                List<Individual> selectedParents = RouletteWheelSelection(population, numParents);
+                List<Individual> selectedParents = RouletteWheelSelection(populationGeneralizedRosenbrock, numParents);
 
                 // Perform crossover on selected parents
                 double crossoverRate = 0.7;
@@ -205,10 +245,64 @@ namespace Kolokwium_AIN_version1
                 Mutate(offspring, mutationRate, mutationRange);
 
                 // Replace the old population with the new one using generational replacement
-                ReplaceGenerational(population, offspring);
+                ReplaceGenerational(populationGeneralizedRosenbrock, offspring);
 
                 // Optionally, print or log information about the current generation
-                Console.WriteLine($"Generation {generation + 1}: Best Fitness = {population.Min(ind => ind.Fitness)}");
+                Console.WriteLine($"Generation {generation + 1}: Best Fitness = {populationGeneralizedRosenbrock.Min(ind => ind.Fitness)}");
+            }
+
+            List<Individual> populationSalomon = InitializePopulation(populationSize, numVariables, minValueSalomon, maxValueSalomon);
+
+            for (int generation = 0; generation < numGenerations; generation++)
+            {
+                // Evaluate the fitness of each individual using the Salomon function
+                EvaluatePopulation(populationSalomon, CalculateFitnessSalomon);
+
+                // Select parents for the next generation
+                int numParents = populationSize / 2; // Adjust as needed
+                List<Individual> selectedParents = RouletteWheelSelection(populationSalomon, numParents);
+
+                // Perform crossover on selected parents
+                double crossoverRate = 0.7;
+                List<Individual> offspring = OnePointCrossover(selectedParents, crossoverRate);
+
+                // Perform mutation on the offspring
+                double mutationRate = 0.1;
+                double mutationRange = 0.5;
+                Mutate(offspring, mutationRate, mutationRange);
+
+                // Replace the old population with the new one using generational replacement
+                ReplaceGenerational(populationSalomon, offspring);
+
+                // Optionally, print or log information about the current generation
+                Console.WriteLine($"Generation {generation + 1} (Salomon): Best Fitness = {populationSalomon.Min(ind => ind.Fitness)}");
+            }
+
+            List<Individual> populationWhitley = InitializePopulation(populationSize, numVariables, minValueWhitley, maxValueWhitley);
+
+            for (int generation = 0; generation < numGenerations; generation++)
+            {
+                // Evaluate the fitness of each individual using the Whitley function
+                EvaluatePopulation(populationWhitley, CalculateFitnessWhitley);
+
+                // Select parents for the next generation
+                int numParents = populationSize / 2; // Adjust as needed
+                List<Individual> selectedParents = RouletteWheelSelection(populationWhitley, numParents);
+
+                // Perform crossover on selected parents
+                double crossoverRate = 0.7;
+                List<Individual> offspring = OnePointCrossover(selectedParents, crossoverRate);
+
+                // Perform mutation on the offspring
+                double mutationRate = 0.1;
+                double mutationRange = 0.5;
+                Mutate(offspring, mutationRate, mutationRange);
+
+                // Replace the old population with the new one using generational replacement
+                ReplaceGenerational(populationWhitley, offspring);
+
+                // Optionally, print or log information about the current generation
+                Console.WriteLine($"Generation {generation + 1} (Whitley): Best Fitness = {populationWhitley.Min(ind => ind.Fitness)}");
             }
         }
     }
